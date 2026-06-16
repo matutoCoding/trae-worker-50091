@@ -265,6 +265,24 @@ const statusColors = {
             var reports = JSON.parse(storedReports);
             MockData.reportRecords = reports.concat(MockData.reportRecords);
         }
+        // 读取新增的观测记录
+        var storedObservations = localStorage.getItem('bird_reserve_new_observations');
+        if (storedObservations) {
+            var observations = JSON.parse(storedObservations);
+            MockData.speciesRecords = observations.concat(MockData.speciesRecords);
+        }
+        // 读取新增的救助记录
+        var storedRescues = localStorage.getItem('bird_reserve_new_rescues');
+        if (storedRescues) {
+            var rescues = JSON.parse(storedRescues);
+            MockData.rescueRecords = rescues.concat(MockData.rescueRecords);
+        }
+        // 读取新增的治疗日志
+        var storedTreatments = localStorage.getItem('bird_reserve_treatment_logs');
+        if (storedTreatments) {
+            var treatments = JSON.parse(storedTreatments);
+            MockData.treatmentLogs = MockData.treatmentLogs.concat(treatments);
+        }
     } catch (e) {
         console.error('加载localStorage数据失败', e);
     }

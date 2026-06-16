@@ -131,16 +131,81 @@ const SpeciesPage = {
     },
 
     renderRecords(container) {
+        var self = this;
+        var pageContainer = container;
+
+        var speciesOptions = MockData.species.map(function(s) {
+            return '<option value="' + s.id + '">' + s.name + ' (' + s.latinName + ')</option>';
+        }).join('');
+
+        var siteOptions = MockData.observationSites.map(function(s) {
+            return '<option value="' + s.id + '">' + s.name + ' - ' + s.location + '</option>';
+        }).join('');
+
+        // 获取当前日期时间
+        var now = new Date();
+        var yyyy = now.getFullYear();
+        var mm = String(now.getMonth() + 1).padStart(2, '0');
+        var dd = String(now.getDate()).padStart(2, '0');
+        var hh = String(now.getHours()).padStart(2, '0');
+        var min = String(now.getMinutes()).padStart(2, '0');
+        var defaultDateTime = yyyy + '-' + mm + '-' + dd + 'T' + hh + ':' + min;
+
         container.innerHTML = `
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-serif font-semibold text-slate-800 mb-1">观测记录</h2>
-                    <p class="text-slate-500 text-sm">鸟类观测记录时间线</p>
+                    <p class="text-slate-500 text-sm">鸟类观测记录时间线，共 ` + MockData.speciesRecords.length + ` 条</p>
                 </div>
-                <button class="btn btn-primary">
+                <button id="addObservationBtn" class="btn btn-primary">
                     <i class="fas fa-plus"></i>
                     新增记录
                 </button>
+            </div>
+
+            <!-- 新增表单（默认隐藏） -->
+            <div id="addObservationForm" class="hidden mb-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-lg font-semibold text-slate-800">新增观测记录</h3>
+                    <button id="cancelAddObservation" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form id="observationForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="text-sm text-slate-600 mb-1.5 block">选择物种 <span class="text-rose-500">*</span></label>
+                        <select id="obsSpecies" class="form-input" required>
+                            <option value="">请选择物种</option>
+                            ` + speciesOptions + `
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-slate-600 mb-1.5 block">观测站点 <span class="text-rose-500">*</span></label>
+                        <select id="obsSite" class="form-input" required>
+                            <option value="">请选择站点</option>
+                            ` + siteOptions + `
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-slate-600 mb-1.5 block">观测时间 <span class="text-rose-500">*</span></label>
+                        <input type="datetime-local" id="obsDateTime" value="` + defaultDateTime + `" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="text-sm text-slate-600 mb-1.5 block">观测数量 <span class="text-rose-500">*</span></label>
+                        <input type="number" id="obsCount" min="1" value="1" class="form-input" placeholder="请输入数量" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm text-slate-600 mb-1.5 block">观测备注</label>
+                        <textarea id="obsNotes" rows="3" class="form-input resize-none" placeholder="请输入观测情况、天气、环境等备注信息..."></textarea>
+                    </div>
+                    <div class="md:col-span-2 flex justify-end gap-3 pt-2">
+                        <button type="button" id="cancelObsBtn2" class="btn btn-secondary">取消</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            保存记录
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -153,9 +218,9 @@ const SpeciesPage = {
                                 <label class="text-sm text-slate-600 mb-2 block">观测站点</label>
                                 <select class="form-input">
                                     <option>全部站点</option>
-                                    ${MockData.observationSites.map(site => `
-                                        <option value="${site.id}">${site.name}</option>
-                                    `).join('')}
+                                    ` + MockData.observationSites.map(function(site) {
+                                        return '<option value="' + site.id + '">' + site.name + '</option>';
+                                    }).join('') + `
                                 </select>
                             </div>
                             
@@ -188,10 +253,11 @@ const SpeciesPage = {
                 </div>
 
                 <div class="lg:col-span-3">
-                    <div class="space-y-4">
-                        ${MockData.speciesRecords.map(record => {
-                            const species = MockData.species.find(s => s.id === record.speciesId);
-                            const protectionClass = species ? protectionLevelColors[species.protectionLevel] : 'bg-slate-100 text-slate-600';
+                    <div class="space-y-4" id="observationList">
+                        ` + MockData.speciesRecords.map(function(record) {
+                            var species = MockData.species.find(function(s) { return s.id === record.speciesId; });
+                            var protectionClass = species ? protectionLevelColors[species.protectionLevel] : 'bg-slate-100 text-slate-600';
+                            var protectionText = species ? species.protectionLevel : '';
                             
                             return `
                                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md transition-shadow">
@@ -202,21 +268,21 @@ const SpeciesPage = {
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-start justify-between mb-2">
                                                 <div>
-                                                    <h3 class="text-lg font-semibold text-slate-800">${record.speciesName}</h3>
+                                                    <h3 class="text-lg font-semibold text-slate-800">` + record.speciesName + `</h3>
                                                     <div class="flex items-center gap-2 mt-1">
-                                                        <span class="px-2 py-0.5 ${protectionClass} text-xs font-medium rounded-full">${species?.protectionLevel || ''}</span>
+                                                        <span class="px-2 py-0.5 ` + protectionClass + ` text-xs font-medium rounded-full">` + protectionText + `</span>
                                                         <span class="text-sm text-slate-500">
-                                                            <i class="fas fa-map-marker-alt mr-1"></i>${record.siteName}
+                                                            <i class="fas fa-map-marker-alt mr-1"></i>` + record.siteName + `
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <span class="text-2xl font-bold text-primary-600">${record.count}<span class="text-sm font-normal text-slate-500 ml-1">只</span></span>
+                                                <span class="text-2xl font-bold text-primary-600">` + record.count + `<span class="text-sm font-normal text-slate-500 ml-1">只</span></span>
                                             </div>
-                                            <p class="text-sm text-slate-600 mb-3">${record.notes}</p>
+                                            <p class="text-sm text-slate-600 mb-3">` + record.notes + `</p>
                                             <div class="flex items-center justify-between pt-3 border-t border-slate-100">
                                                 <div class="flex items-center gap-4 text-sm text-slate-500">
-                                                    <span><i class="fas fa-calendar-alt mr-1"></i>${record.observationDate}</span>
-                                                    <span><i class="fas fa-user mr-1"></i>${record.observer}</span>
+                                                    <span><i class="fas fa-calendar-alt mr-1"></i>` + record.observationDate + `</span>
+                                                    <span><i class="fas fa-user mr-1"></i>` + record.observer + `</span>
                                                 </div>
                                                 <button class="text-primary-600 hover:text-primary-700 text-sm font-medium">
                                                     查看详情 <i class="fas fa-arrow-right ml-1"></i>
@@ -226,11 +292,114 @@ const SpeciesPage = {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+                        }).join('') + `
                     </div>
                 </div>
             </div>
         `;
+
+        setTimeout(function() {
+            self.bindObservationEvents(pageContainer);
+        }, 0);
+    },
+
+    bindObservationEvents: function(pageContainer) {
+        var self = this;
+
+        // 显示/隐藏新增表单
+        var addBtn = document.getElementById('addObservationBtn');
+        var cancelBtn1 = document.getElementById('cancelAddObservation');
+        var cancelBtn2 = document.getElementById('cancelObsBtn2');
+        var form = document.getElementById('addObservationForm');
+
+        function toggleForm(show) {
+            if (form) {
+                if (show) {
+                    form.classList.remove('hidden');
+                    // 滚动到表单
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    form.classList.add('hidden');
+                }
+            }
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function() { toggleForm(true); });
+        }
+        if (cancelBtn1) {
+            cancelBtn1.addEventListener('click', function() { toggleForm(false); });
+        }
+        if (cancelBtn2) {
+            cancelBtn2.addEventListener('click', function() { toggleForm(false); });
+        }
+
+        // 表单提交
+        var obsForm = document.getElementById('observationForm');
+        if (obsForm) {
+            obsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                var speciesId = document.getElementById('obsSpecies').value;
+                var siteId = document.getElementById('obsSite').value;
+                var dateTimeStr = document.getElementById('obsDateTime').value;
+                var count = parseInt(document.getElementById('obsCount').value, 10);
+                var notes = document.getElementById('obsNotes').value.trim();
+
+                if (!speciesId || !siteId || !dateTimeStr || !count) {
+                    alert('请填写完整的必填项');
+                    return;
+                }
+
+                // 查找物种和站点名称
+                var species = MockData.species.find(function(s) { return s.id === speciesId; });
+                var site = MockData.observationSites.find(function(s) { return s.id === siteId; });
+                if (!species || !site) {
+                    alert('物种或站点无效');
+                    return;
+                }
+
+                // 格式化日期时间
+                var dt = new Date(dateTimeStr);
+                var y = dt.getFullYear();
+                var m = String(dt.getMonth() + 1).padStart(2, '0');
+                var d = String(dt.getDate()).padStart(2, '0');
+                var h = String(dt.getHours()).padStart(2, '0');
+                var mi = String(dt.getMinutes()).padStart(2, '0');
+                var formattedDate = y + '-' + m + '-' + d + ' ' + h + ':' + mi;
+
+                // 创建新记录
+                var newRecord = {
+                    id: 'SR' + Date.now(),
+                    speciesId: speciesId,
+                    speciesName: species.name,
+                    siteId: siteId,
+                    siteName: site.name,
+                    observationDate: formattedDate,
+                    count: count,
+                    observer: '当前用户',
+                    notes: notes || '无备注',
+                    photos: []
+                };
+
+                // 加入MockData
+                MockData.speciesRecords.unshift(newRecord);
+
+                // 保存到localStorage
+                try {
+                    var stored = localStorage.getItem('bird_reserve_new_observations');
+                    var newRecords = stored ? JSON.parse(stored) : [];
+                    newRecords.unshift(newRecord);
+                    localStorage.setItem('bird_reserve_new_observations', JSON.stringify(newRecords));
+                } catch (err) {
+                    console.error('保存失败', err);
+                }
+
+                alert('观测记录保存成功！');
+                // 重新渲染
+                self.renderRecords(pageContainer);
+            });
+        }
     },
 
     renderRinging(container) {

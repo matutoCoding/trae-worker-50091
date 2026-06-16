@@ -1,6 +1,8 @@
 // 科普宣教模块
 
 const EducationPage = {
+    selectedReportId: null,
+
     renderBirdwatching(container) {
         const categories = ['全部', '迁徙知识', '生态保护', '观鸟技巧', '物种介绍', '季节观察'];
         const activeCategory = '全部';
@@ -218,7 +220,7 @@ const EducationPage = {
                                             </td>
                                             <td>
                                                 <div class="flex items-center gap-1">
-                                                    <button class="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="查看">
+                                                    <button class="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="查看" data-report-id="${record.id}" onclick="EducationPage.showReportDetail('${record.id}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <button class="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="下载">
@@ -297,12 +299,119 @@ const EducationPage = {
                     </div>
                 </div>
             </div>
+
+            <!-- 详情弹窗 -->
+            <div id="reportDetailModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                        <h3 class="text-xl font-serif font-semibold text-slate-800">上报详情</h3>
+                        <button onclick="EducationPage.closeReportDetail()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i class="fas fa-times text-slate-400"></i>
+                        </button>
+                    </div>
+                    <div id="reportDetailContent" class="p-6">
+                    </div>
+                </div>
+            </div>
         `;
 
         // 绑定提交事件
         setTimeout(function() {
             self.bindReportForm();
         }, 0);
+    },
+
+    showReportDetail: function(reportId) {
+        var self = this;
+        this.selectedReportId = reportId;
+        var report = MockData.reportRecords.find(function(r) { return r.id === reportId; });
+        if (!report) return;
+
+        var statusColors = {
+            '已审核': 'bg-emerald-100 text-emerald-600',
+            '待审核': 'bg-amber-100 text-amber-600',
+            '已驳回': 'bg-rose-100 text-rose-600'
+        };
+
+        var typeIcons = {
+            '物种调查': 'fa-binoculars',
+            '巡护报告': 'fa-hiking',
+            '项目汇报': 'fa-tasks',
+            '工作总结': 'fa-file-alt'
+        };
+
+        var content = document.getElementById('reportDetailContent');
+        if (!content) return;
+
+        content.innerHTML = `
+            <div class="space-y-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-14 h-14 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i class="fas ${typeIcons[report.type] || 'fa-file'} text-primary-500 text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-semibold text-slate-800 mb-1">${report.title}</h4>
+                        <div class="flex items-center gap-2">
+                            <span class="tag tag-sky">${report.type}</span>
+                            <span class="px-2.5 py-1 ${statusColors[report.status]} text-xs font-medium rounded-full">
+                                ${report.status}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-500 mb-1">上报人</p>
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-medium">
+                                ${report.reporter ? report.reporter[0] : 'U'}
+                            </div>
+                            <span class="font-medium text-slate-700">${report.reporter}</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-500 mb-1">上报日期</p>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar text-slate-400"></i>
+                            <span class="font-medium text-slate-700">${report.reportDate}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-primary-50 to-teal-50 rounded-xl p-5 border border-primary-100">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fas fa-file-alt text-primary-500"></i>
+                        <h5 class="font-semibold text-primary-800">上报说明</h5>
+                    </div>
+                    <p class="text-sm text-primary-700 leading-relaxed whitespace-pre-wrap">${report.notes || report.attachment || '无上报说明'}</p>
+                </div>
+
+                <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
+                    <button onclick="EducationPage.closeReportDetail()" class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 transition-colors">
+                        关闭
+                    </button>
+                    <button class="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors">
+                        <i class="fas fa-download mr-2"></i>下载附件
+                    </button>
+                </div>
+            </div>
+        `;
+
+        var modal = document.getElementById('reportDetailModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    },
+
+    closeReportDetail: function() {
+        var modal = document.getElementById('reportDetailModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        this.selectedReportId = null;
     },
 
     bindReportForm: function() {
@@ -345,7 +454,8 @@ const EducationPage = {
                 reportDate: dateStr,
                 type: type,
                 status: '待审核',
-                attachment: notes || '(无附件)'
+                notes: notes || '无上报说明',
+                attachment: '(无附件)'
             };
 
             // 加入MockData

@@ -1,6 +1,8 @@
 // 迁徙监测模块
 
 const MigrationPage = {
+    selectedRouteId: 'MR001',
+
     renderRhythm: function(container) {
         var rankList = [
             { name: '鸿雁', count: 1289, percent: 85 },
@@ -206,8 +208,20 @@ const MigrationPage = {
     },
 
     renderRoutes: function(container) {
-        var selectedRoute = MockData.migrationRoutes[0];
         var self = this;
+        var pageContainer = container;
+
+        // 根据selectedRouteId查找路线
+        var selectedRoute = MockData.migrationRoutes.find(function(r) { return r.id === self.selectedRouteId; });
+        if (!selectedRoute) {
+            selectedRoute = MockData.migrationRoutes[0];
+            self.selectedRouteId = selectedRoute.id;
+        }
+
+        var optionsHtml = MockData.migrationRoutes.map(function(route) {
+            var selected = route.id === self.selectedRouteId ? 'selected' : '';
+            return '<option value="' + route.id + '" ' + selected + '>' + route.speciesName + ' - ' + route.season + '</option>';
+        }).join('');
 
         var stopsHtml = selectedRoute.stops.map(function(stop, index) {
             var isLast = index === selectedRoute.stops.length - 1;
@@ -222,10 +236,6 @@ const MigrationPage = {
                     '</p>' +
                 '</div>' +
             '</div>';
-        }).join('');
-
-        var optionsHtml = MockData.migrationRoutes.map(function(route) {
-            return '<option value="' + route.id + '">' + route.speciesName + ' - ' + route.season + '</option>';
         }).join('');
 
         container.innerHTML = `
@@ -285,14 +295,33 @@ const MigrationPage = {
             </div>
         `;
 
-        self.initMigrationMap();
+        self.initMigrationMap(selectedRoute.id);
+
+        setTimeout(function() {
+            self.bindRouteEvents(pageContainer);
+        }, 0);
     },
 
-    initMigrationMap: function() {
+    bindRouteEvents: function(pageContainer) {
+        var self = this;
+        var routeSelect = document.getElementById('routeSelect');
+        if (routeSelect) {
+            routeSelect.addEventListener('change', function(e) {
+                self.selectedRouteId = e.target.value;
+                self.renderRoutes(pageContainer);
+            });
+        }
+    },
+
+    initMigrationMap: function(routeId) {
         var mapContainer = document.getElementById('migrationMap');
         if (!mapContainer) return;
 
-        var route = MockData.migrationRoutes[0];
+        // 根据routeId查找路线
+        var route = MockData.migrationRoutes.find(function(r) { return r.id === routeId; });
+        if (!route) {
+            route = MockData.migrationRoutes[0];
+        }
         
         var map = L.map('migrationMap').setView([40, 118], 5);
         
