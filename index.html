@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>候鸟保护区监测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        sky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'serif'],
+                        sans: ['"Noto Sans SC"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-primary-100 fixed top-0 left-0 right-0 z-50 shadow-sm">
+        <div class="flex items-center justify-between h-16 px-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                    <i class="fas fa-dove text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-serif font-semibold text-primary-800 leading-tight">候鸟保护区监测系统</h1>
+                    <p class="text-xs text-primary-500">Migratory Bird Reserve Monitoring</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="relative p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-500 rounded-full"></span>
+                </button>
+                <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
+                    <div class="w-9 h-9 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        管
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-slate-700">管理员</p>
+                        <p class="text-xs text-slate-400">admin@birdreserve.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex pt-16">
+        <!-- 左侧导航栏 -->
+        <aside class="w-64 fixed left-0 top-16 bottom-0 bg-white/70 backdrop-blur-sm border-r border-primary-100 z-40 overflow-y-auto">
+            <nav class="p-4 space-y-1">
+                <div class="mb-2 px-3">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">主菜单</p>
+                </div>
+                
+                <a href="#dashboard" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200" data-page="dashboard">
+                    <i class="fas fa-th-large w-5 text-center"></i>
+                    <span>首页概览</span>
+                </a>
+
+                <div class="mt-5 mb-2 px-3">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">监测管理</p>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="observation">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-map-marker-alt w-5 text-center"></i>
+                            <span>观测点位</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#observation-sites" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="observation-sites">
+                            站点分布
+                        </a>
+                        <a href="#observation-manage" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="observation-manage">
+                            站点管理
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="species">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-feather w-5 text-center"></i>
+                            <span>物种记录</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#species-directory" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="species-directory">
+                            物种名录
+                        </a>
+                        <a href="#species-records" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="species-records">
+                            观测记录
+                        </a>
+                        <a href="#species-ringing" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="species-ringing">
+                            环志回收
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="migration">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-route w-5 text-center"></i>
+                            <span>迁徙监测</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#migration-rhythm" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="migration-rhythm">
+                            节律分析
+                        </a>
+                        <a href="#migration-routes" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="migration-routes">
+                            路线追踪
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mt-5 mb-2 px-3">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">巡护与栖息地</p>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="patrol">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-hiking w-5 text-center"></i>
+                            <span>巡护管理</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#patrol-tracks" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="patrol-tracks">
+                            路线轨迹
+                        </a>
+                        <a href="#patrol-tasks" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="patrol-tasks">
+                            任务管理
+                        </a>
+                        <a href="#patrol-prevention" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="patrol-prevention">
+                            盗猎防控
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="habitat">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-tree w-5 text-center"></i>
+                            <span>栖息地</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#habitat-water" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="habitat-water">
+                            水位管理
+                        </a>
+                        <a href="#habitat-restoration" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="habitat-restoration">
+                            修复项目
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mt-5 mb-2 px-3">
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">救助与科普</p>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="rescue">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-heartbeat w-5 text-center"></i>
+                            <span>救助登记</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#rescue-records" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="rescue-records">
+                            救助记录
+                        </a>
+                        <a href="#rescue-treatment" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="rescue-treatment">
+                            治疗跟踪
+                        </a>
+                        <a href="#rescue-release" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="rescue-release">
+                            放归登记
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <button class="nav-group-toggle w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition-all duration-200" data-group="education">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-book-open w-5 text-center"></i>
+                            <span>科普宣教</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div class="nav-submenu ml-8 mt-1 space-y-0.5 hidden">
+                        <a href="#education-birdwatching" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="education-birdwatching">
+                            观鸟科普
+                        </a>
+                        <a href="#education-reporting" class="nav-subitem block px-3 py-2 rounded-md text-sm text-slate-500 hover:bg-primary-50 hover:text-primary-600 transition-colors" data-page="education-reporting">
+                            数据上报
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-primary-100 bg-white/90">
+                <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-emerald-50 rounded-xl">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-white"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-primary-800 truncate">保护区状态</p>
+                        <p class="text-xs text-primary-500">运行正常 · 今日巡护 8 人次</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 ml-64 p-6 min-h-screen">
+            <div id="page-content"></div>
+        </main>
+    </div>
+
+    <!-- 数据模块 -->
+    <script src="js/data/mockData.js"></script>
+    
+    <!-- 页面模块 -->
+    <script src="js/pages/dashboard.js"></script>
+    <script src="js/pages/observation.js"></script>
+    <script src="js/pages/species.js"></script>
+    <script src="js/pages/migration.js"></script>
+    <script src="js/pages/patrol.js"></script>
+    <script src="js/pages/habitat.js"></script>
+    <script src="js/pages/rescue.js"></script>
+    <script src="js/pages/education.js"></script>
+    
+    <!-- 主应用 -->
+    <script src="js/app.js"></script>
+</body>
+</html>
