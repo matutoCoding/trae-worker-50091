@@ -1,24 +1,66 @@
 // 救助登记模块
 
 const RescuePage = {
+    rescueSearch: '',
+    rescueStatus: 'all',
+
     renderRecords(container) {
-        const statusColors = {
+        var self = this;
+        var pageContainer = container;
+
+        var statusColors = {
             '治疗中': 'bg-amber-100 text-amber-700',
             '康复中': 'bg-sky-100 text-sky-700',
             '已放归': 'bg-emerald-100 text-emerald-700'
         };
 
-        const injuryColors = {
+        var injuryColors = {
             '轻度': 'bg-emerald-100 text-emerald-600',
             '中度': 'bg-amber-100 text-amber-600',
             '严重': 'bg-rose-100 text-rose-600'
         };
 
+        // 应用筛选
+        var query = (this.rescueSearch || '').trim().toLowerCase();
+        var statusVal = this.rescueStatus || 'all';
+
+        var filteredRecords = MockData.rescueRecords.filter(function(record) {
+            var matchQuery = !query ||
+                             record.speciesName.toLowerCase().indexOf(query) !== -1 ||
+                             record.rescueLocation.toLowerCase().indexOf(query) !== -1 ||
+                             record.injuryType.toLowerCase().indexOf(query) !== -1;
+            var matchStatus = statusVal === 'all' || record.status === statusVal;
+            return matchQuery && matchStatus;
+        });
+
+        // 根据筛选结果计算统计
+        var total = filteredRecords.length;
+        var treating = filteredRecords.filter(function(r) { return r.status === '治疗中'; }).length;
+        var recovering = filteredRecords.filter(function(r) { return r.status === '康复中'; }).length;
+        var released = filteredRecords.filter(function(r) { return r.status === '已放归'; }).length;
+
+        var searchEscaped = this.rescueSearch ? this.rescueSearch.replace(/"/g, '&quot;') : '';
+
+        var statusBtns = [
+            { key: 'all', label: '全部' },
+            { key: '治疗中', label: '治疗中' },
+            { key: '康复中', label: '康复中' },
+            { key: '已放归', label: '已放归' }
+        ];
+
+        var statusBtnsHtml = statusBtns.map(function(btn) {
+            var active = self.rescueStatus === btn.key;
+            var cls = active
+                ? 'px-3 py-1.5 text-sm bg-primary-50 text-primary-600 rounded-lg font-medium cursor-default rescue-status-btn'
+                : 'px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer rescue-status-btn';
+            return '<button class="' + cls + '" data-status="' + btn.key + '">' + btn.label + '</button>';
+        }).join('');
+
         container.innerHTML = `
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-serif font-semibold text-slate-800 mb-1">救助记录</h2>
-                    <p class="text-slate-500 text-sm">伤病鸟救助登记和管理</p>
+                    <p class="text-slate-500 text-sm">伤病鸟救助登记和管理，当前筛选共 ` + total + ` 条</p>
                 </div>
                 <button class="btn btn-primary">
                     <i class="fas fa-plus"></i>
@@ -32,8 +74,8 @@ const RescuePage = {
                         <i class="fas fa-heartbeat text-rose-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.rescueRecords.length}</p>
-                        <p class="text-sm text-slate-500">总救助数</p>
+                        <p class="text-2xl font-bold text-slate-800">` + total + `</p>
+                        <p class="text-sm text-slate-500">筛选结果</p>
                     </div>
                 </div>
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
@@ -41,7 +83,7 @@ const RescuePage = {
                         <i class="fas fa-stethoscope text-amber-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.rescueRecords.filter(r => r.status === '治疗中').length}</p>
+                        <p class="text-2xl font-bold text-slate-800">` + treating + `</p>
                         <p class="text-sm text-slate-500">治疗中</p>
                     </div>
                 </div>
@@ -50,7 +92,7 @@ const RescuePage = {
                         <i class="fas fa-heart text-sky-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.rescueRecords.filter(r => r.status === '康复中').length}</p>
+                        <p class="text-2xl font-bold text-slate-800">` + recovering + `</p>
                         <p class="text-sm text-slate-500">康复中</p>
                     </div>
                 </div>
@@ -59,7 +101,7 @@ const RescuePage = {
                         <i class="fas fa-dove text-emerald-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.rescueRecords.filter(r => r.status === '已放归').length}</p>
+                        <p class="text-2xl font-bold text-slate-800">` + released + `</p>
                         <p class="text-sm text-slate-500">已放归</p>
                     </div>
                 </div>
@@ -68,19 +110,16 @@ const RescuePage = {
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="p-4 border-b border-slate-100 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <button class="px-3 py-1.5 text-sm bg-primary-50 text-primary-600 rounded-lg font-medium">全部</button>
-                        <button class="px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">治疗中</button>
-                        <button class="px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">康复中</button>
-                        <button class="px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">已放归</button>
+                        ` + statusBtnsHtml + `
                     </div>
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" placeholder="搜索物种、地点..." class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-56 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <input type="text" id="rescueSearchInput" placeholder="搜索物种、地点、伤情..." value="` + searchEscaped + `" class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                    ${MockData.rescueRecords.map(record => {
+                    ` + (filteredRecords.length > 0 ? filteredRecords.map(function(record) {
                         return `
                             <div class="border border-slate-100 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
                                 <div class="flex items-start justify-between mb-3">
@@ -89,32 +128,32 @@ const RescuePage = {
                                             <i class="fas fa-dove text-2xl text-rose-500"></i>
                                         </div>
                                         <div>
-                                            <h3 class="font-semibold text-slate-800">${record.speciesName}</h3>
-                                            <p class="text-xs text-slate-500">${record.age} · ${record.gender}</p>
+                                            <h3 class="font-semibold text-slate-800">` + record.speciesName + `</h3>
+                                            <p class="text-xs text-slate-500">` + record.age + ` · ` + record.gender + `</p>
                                         </div>
                                     </div>
-                                    <span class="px-2.5 py-1 ${statusColors[record.status]} text-xs font-medium rounded-full">
-                                        ${record.status}
+                                    <span class="px-2.5 py-1 ` + statusColors[record.status] + ` text-xs font-medium rounded-full">
+                                        ` + record.status + `
                                     </span>
                                 </div>
                                 
                                 <div class="space-y-2 mb-4">
                                     <div class="flex items-center gap-2 text-sm text-slate-600">
                                         <i class="fas fa-heartbeat text-rose-400 w-4"></i>
-                                        <span class="${injuryColors[record.injuryDegree]} px-2 py-0.5 rounded text-xs font-medium">${record.injuryDegree}</span>
-                                        <span class="text-slate-500">${record.injuryType}</span>
+                                        <span class="` + injuryColors[record.injuryDegree] + ` px-2 py-0.5 rounded text-xs font-medium">` + record.injuryDegree + `</span>
+                                        <span class="text-slate-500">` + record.injuryType + `</span>
                                     </div>
                                     <div class="flex items-center gap-2 text-sm text-slate-600">
                                         <i class="fas fa-map-marker-alt text-primary-400 w-4"></i>
-                                        <span>${record.rescueLocation}</span>
+                                        <span>` + record.rescueLocation + `</span>
                                     </div>
                                     <div class="flex items-center gap-2 text-sm text-slate-600">
                                         <i class="fas fa-calendar text-sky-400 w-4"></i>
-                                        <span>${record.rescueDate}</span>
+                                        <span>` + record.rescueDate + `</span>
                                     </div>
                                     <div class="flex items-center gap-2 text-sm text-slate-600">
                                         <i class="fas fa-user text-slate-400 w-4"></i>
-                                        <span>救助人: ${record.rescuer}</span>
+                                        <span>救助人: ` + record.rescuer + `</span>
                                     </div>
                                 </div>
 
@@ -123,10 +162,47 @@ const RescuePage = {
                                 </button>
                             </div>
                         `;
-                    }).join('')}
+                    }).join('') : `
+                        <div class="col-span-full py-16 text-center">
+                            <i class="fas fa-search text-5xl text-slate-200 mb-4"></i>
+                            <p class="text-slate-500">没有找到匹配的救助记录</p>
+                            <p class="text-sm text-slate-400 mt-1">请尝试其他关键词或状态</p>
+                        </div>
+                    `) + `
                 </div>
             </div>
         `;
+
+        setTimeout(function() {
+            self.bindRescueEvents(pageContainer);
+        }, 0);
+    },
+
+    bindRescueEvents: function(pageContainer) {
+        var self = this;
+
+        var searchInput = document.getElementById('rescueSearchInput');
+        if (searchInput) {
+            searchInput.focus();
+            var val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+
+            searchInput.addEventListener('input', function(e) {
+                self.rescueSearch = e.target.value;
+                self.renderRecords(pageContainer);
+            });
+        }
+
+        var statusBtns = document.querySelectorAll('.rescue-status-btn');
+        for (var i = 0; i < statusBtns.length; i++) {
+            (function(btn) {
+                btn.addEventListener('click', function() {
+                    self.rescueStatus = btn.getAttribute('data-status');
+                    self.renderRecords(pageContainer);
+                });
+            })(statusBtns[i]);
+        }
     },
 
     renderTreatment(container) {

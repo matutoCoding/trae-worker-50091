@@ -5,90 +5,127 @@ const SpeciesPage = {
     searchQuery: '',
 
     renderDirectory(container) {
-        const categories = ['all', '鹤形目', '鹳形目', '雁形目', '鹈形目', '鸻形目'];
-        const categoryNames = { 'all': '全部', '鹤形目': '鹤形目', '鹳形目': '鹳形目', '雁形目': '雁形目', '鹈形目': '鹈形目', '鸻形目': '鸻形目' };
+        var self = this;
+        var categories = ['all', '鹤形目', '鹳形目', '雁形目', '鹈形目', '鸻形目'];
+        var categoryNames = { 'all': '全部', '鹤形目': '鹤形目', '鹳形目': '鹳形目', '雁形目': '雁形目', '鹈形目': '鹈形目', '鸻形目': '鸻形目' };
 
-        let filteredSpecies = MockData.species;
+        var filteredSpecies = MockData.species.slice();
+
+        // 分类筛选
         if (this.selectedCategory !== 'all') {
-            filteredSpecies = filteredSpecies.filter(s => s.category === this.selectedCategory);
+            filteredSpecies = filteredSpecies.filter(function(s) {
+                return s.category === self.selectedCategory;
+            });
         }
+
+        // 搜索筛选
+        var query = (this.searchQuery || '').trim().toLowerCase();
+        if (query) {
+            filteredSpecies = filteredSpecies.filter(function(s) {
+                return s.name.toLowerCase().indexOf(query) !== -1 ||
+                       s.latinName.toLowerCase().indexOf(query) !== -1;
+            });
+        }
+
+        var searchEscaped = this.searchQuery ? this.searchQuery.replace(/"/g, '&quot;') : '';
 
         container.innerHTML = `
             <div class="mb-6">
                 <h2 class="text-2xl font-serif font-semibold text-slate-800 mb-1">物种名录</h2>
-                <p class="text-slate-500 text-sm">保护区记录的鸟类物种信息</p>
+                <p class="text-slate-500 text-sm">保护区记录的鸟类物种信息，共 ` + filteredSpecies.length + ` 种</p>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6">
                 <div class="flex flex-wrap items-center gap-4">
                     <div class="relative flex-1 max-w-md">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="speciesSearch" placeholder="搜索鸟类名称、学名..." value="${this.searchQuery}" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                        <input type="text" id="speciesSearch" placeholder="搜索鸟类名称、学名..." value="` + searchEscaped + `" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        ${categories.map(cat => `
-                            <button class="category-btn px-4 py-2 rounded-xl text-sm font-medium transition-all ${this.selectedCategory === cat ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}" data-category="${cat}">
-                                ${categoryNames[cat]}
-                            </button>
-                        `).join('')}
+                        ` + categories.map(function(cat) {
+                            var active = self.selectedCategory === cat;
+                            return `<button class="category-btn px-4 py-2 rounded-xl text-sm font-medium transition-all ` + (active ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30' : 'bg-slate-50 text-slate-600 hover:bg-slate-100') + `" data-category="` + cat + `">
+                                ` + categoryNames[cat] + `
+                            </button>`;
+                        }).join('') + `
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                ${filteredSpecies.map(species => {
-                    const protectionClass = protectionLevelColors[species.protectionLevel] || 'bg-slate-100 text-slate-600';
-                    const statusClass = {
+                ` + (filteredSpecies.length > 0 ? filteredSpecies.map(function(species) {
+                    var protectionClass = protectionLevelColors[species.protectionLevel] || 'bg-slate-100 text-slate-600';
+                    var statusMap = {
                         '濒危': 'bg-rose-100 text-rose-600',
                         '易危': 'bg-amber-100 text-amber-600',
                         '无危': 'bg-emerald-100 text-emerald-600'
-                    }[species.status] || 'bg-slate-100 text-slate-600';
-                    
+                    };
+                    var statusClass = statusMap[species.status] || 'bg-slate-100 text-slate-600';
+
                     return `
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer species-card" data-species-id="${species.id}">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-hover cursor-pointer species-card" data-species-id="` + species.id + `">
                             <div class="h-40 bg-gradient-to-br from-sky-100 via-emerald-50 to-teal-100 relative overflow-hidden">
                                 <div class="absolute inset-0 flex items-center justify-center">
                                     <i class="fas fa-dove text-6xl text-white/40"></i>
                                 </div>
                                 <div class="absolute top-3 right-3 flex gap-1.5">
-                                    <span class="px-2 py-0.5 ${protectionClass} text-xs font-medium rounded-full">${species.protectionLevel}</span>
+                                    <span class="px-2 py-0.5 ` + protectionClass + ` text-xs font-medium rounded-full">` + species.protectionLevel + `</span>
                                 </div>
                                 <div class="absolute bottom-3 left-3">
-                                    <span class="px-2 py-0.5 ${statusClass} text-xs font-medium rounded-full">${species.status}</span>
+                                    <span class="px-2 py-0.5 ` + statusClass + ` text-xs font-medium rounded-full">` + species.status + `</span>
                                 </div>
                             </div>
                             <div class="p-4">
-                                <h3 class="text-base font-semibold text-slate-800 mb-1">${species.name}</h3>
-                                <p class="text-xs text-slate-400 italic mb-3">${species.latinName}</p>
-                                <p class="text-sm text-slate-500 line-clamp-2 mb-3">${species.description}</p>
+                                <h3 class="text-base font-semibold text-slate-800 mb-1">` + species.name + `</h3>
+                                <p class="text-xs text-slate-400 italic mb-3">` + species.latinName + `</p>
+                                <p class="text-sm text-slate-500 line-clamp-2 mb-3">` + species.description + `</p>
                                 <div class="flex items-center justify-between pt-3 border-t border-slate-100">
-                                    <span class="text-xs text-slate-400">${species.category}</span>
+                                    <span class="text-xs text-slate-400">` + species.category + `</span>
                                     <span class="text-sm font-medium text-primary-600">
-                                        <i class="fas fa-users mr-1"></i>${species.population}只
+                                        <i class="fas fa-users mr-1"></i>` + species.population + `只
                                     </span>
                                 </div>
                             </div>
                         </div>
                     `;
-                }).join('')}
+                }).join('') : `
+                    <div class="col-span-full py-16 text-center">
+                        <i class="fas fa-search text-5xl text-slate-200 mb-4"></i>
+                        <p class="text-slate-500">没有找到匹配的物种</p>
+                        <p class="text-sm text-slate-400 mt-1">请尝试其他关键词或分类</p>
+                    </div>
+                `) + `
             </div>
         `;
 
         this.bindDirectoryEvents();
     },
 
-    bindDirectoryEvents() {
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.selectedCategory = btn.dataset.category;
-                this.renderDirectory(document.getElementById('page-content'));
-            });
-        });
+    bindDirectoryEvents: function() {
+        var self = this;
+        var pageContainer = document.getElementById('page-content');
 
-        const searchInput = document.getElementById('speciesSearch');
+        var categoryBtns = document.querySelectorAll('.category-btn');
+        for (var i = 0; i < categoryBtns.length; i++) {
+            (function(btn) {
+                btn.addEventListener('click', function() {
+                    self.selectedCategory = btn.getAttribute('data-category');
+                    self.renderDirectory(pageContainer);
+                });
+            })(categoryBtns[i]);
+        }
+
+        var searchInput = document.getElementById('speciesSearch');
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                this.searchQuery = e.target.value;
+            searchInput.focus();
+            // 将光标移到末尾
+            var val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+
+            searchInput.addEventListener('input', function(e) {
+                self.searchQuery = e.target.value;
+                self.renderDirectory(pageContainer);
             });
         }
     },

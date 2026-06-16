@@ -93,18 +93,25 @@ const EducationPage = {
     },
 
     renderReporting(container) {
-        const statusColors = {
+        var self = this;
+        var statusColors = {
             '已审核': 'bg-emerald-100 text-emerald-600',
             '待审核': 'bg-amber-100 text-amber-600',
             '已驳回': 'bg-rose-100 text-rose-600'
         };
 
-        const typeIcons = {
+        var typeIcons = {
             '物种调查': 'fa-binoculars',
             '巡护报告': 'fa-hiking',
             '项目汇报': 'fa-tasks',
             '工作总结': 'fa-file-alt'
         };
+
+        var totalCount = MockData.reportRecords.length;
+        var reviewedCount = MockData.reportRecords.filter(function(r) { return r.status === '已审核';
+        }).length;
+        var pendingCount = MockData.reportRecords.filter(function(r) { return r.status === '待审核';
+        }).length;
 
         container.innerHTML = `
             <div class="mb-6 flex items-center justify-between">
@@ -124,7 +131,7 @@ const EducationPage = {
                         <i class="fas fa-file-upload text-primary-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.reportRecords.length}</p>
+                        <p class="text-2xl font-bold text-slate-800">${totalCount}</p>
                         <p class="text-sm text-slate-500">总上报数</p>
                     </div>
                 </div>
@@ -133,7 +140,7 @@ const EducationPage = {
                         <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.reportRecords.filter(r => r.status === '已审核').length}</p>
+                        <p class="text-2xl font-bold text-slate-800">${reviewedCount}</p>
                         <p class="text-sm text-slate-500">已审核</p>
                     </div>
                 </div>
@@ -142,7 +149,7 @@ const EducationPage = {
                         <i class="fas fa-clock text-amber-500 text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-slate-800">${MockData.reportRecords.filter(r => r.status === '待审核').length}</p>
+                        <p class="text-2xl font-bold text-slate-800">${pendingCount}</p>
                         <p class="text-sm text-slate-500">待审核</p>
                     </div>
                 </div>
@@ -152,7 +159,7 @@ const EducationPage = {
                     </div>
                     <div>
                         <p class="text-2xl font-bold text-slate-800">本月</p>
-                        <p class="text-sm text-slate-500">3 份上报</p>
+                        <p class="text-sm text-slate-500">${pendingCount} 份待审</p>
                     </div>
                 </div>
             </div>
@@ -190,7 +197,7 @@ const EducationPage = {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${MockData.reportRecords.map(record => {
+                                ${MockData.reportRecords.map(function(record) {
                                     return `
                                         <tr>
                                             <td>
@@ -230,24 +237,24 @@ const EducationPage = {
                 <div class="space-y-5">
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                         <h3 class="font-semibold text-slate-800 mb-4">快速上报</h3>
-                        <form class="space-y-4">
+                        <form id="quickReportForm" class="space-y-4">
                             <div>
                                 <label class="text-sm text-slate-600 mb-1.5 block">上报标题</label>
-                                <input type="text" placeholder="请输入标题..." class="form-input">
+                                <input id="reportTitle" type="text" placeholder="请输入标题..." class="form-input">
                             </div>
                             <div>
                                 <label class="text-sm text-slate-600 mb-1.5 block">上报类型</label>
-                                <select class="form-input">
-                                    <option>请选择类型</option>
-                                    <option>物种调查</option>
-                                    <option>巡护报告</option>
-                                    <option>项目汇报</option>
-                                    <option>工作总结</option>
+                                <select id="reportType" class="form-input">
+                                    <option value="">请选择类型</option>
+                                    <option value="物种调查">物种调查</option>
+                                    <option value="巡护报告">巡护报告</option>
+                                    <option value="项目汇报">项目汇报</option>
+                                    <option value="工作总结">工作总结</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="text-sm text-slate-600 mb-1.5 block">上报说明</label>
-                                <textarea rows="3" placeholder="请简要描述..." class="form-input resize-none"></textarea>
+                                <textarea id="reportNotes" rows="3" placeholder="请简要描述..." class="form-input resize-none"></textarea>
                             </div>
                             <div>
                                 <label class="text-sm text-slate-600 mb-1.5 block">附件上传</label>
@@ -257,7 +264,7 @@ const EducationPage = {
                                     <p class="text-xs text-slate-400 mt-1">支持 PDF, Word, Excel 格式</p>
                                 </div>
                             </div>
-                            <button type="button" class="w-full btn btn-primary">
+                            <button type="submit" id="submitReportBtn" class="w-full btn btn-primary">
                                 <i class="fas fa-paper-plane"></i>
                                 提交上报
                             </button>
@@ -291,5 +298,77 @@ const EducationPage = {
                 </div>
             </div>
         `;
+
+        // 绑定提交事件
+        setTimeout(function() {
+            self.bindReportForm();
+        }, 0);
+    },
+
+    bindReportForm: function() {
+        var form = document.getElementById('quickReportForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var titleInput = document.getElementById('reportTitle');
+            var typeSelect = document.getElementById('reportType');
+            var notesTextarea = document.getElementById('reportNotes');
+
+            var title = titleInput.value.trim();
+            var type = typeSelect.value;
+            var notes = notesTextarea.value.trim();
+
+            if (!title) {
+                alert('请输入上报标题');
+                titleInput.focus();
+                return;
+            }
+            if (!type) {
+                alert('请选择上报类型');
+                typeSelect.focus();
+                return;
+            }
+
+            // 创建新记录
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            var dateStr = yyyy + '-' + mm + '-' + dd;
+
+            var newRecord = {
+                id: 'REP' + Date.now(),
+                title: title,
+                reporter: '当前用户',
+                reportDate: dateStr,
+                type: type,
+                status: '待审核',
+                attachment: notes || '(无附件)'
+            };
+
+            // 加入MockData
+            MockData.reportRecords.unshift(newRecord);
+
+            // 保存到localStorage
+            try {
+                var stored = localStorage.getItem('bird_reserve_new_reports');
+                var newReports = stored ? JSON.parse(stored) : [];
+                newReports.unshift(newRecord);
+                localStorage.setItem('bird_reserve_new_reports', JSON.stringify(newReports));
+            } catch (err) {
+                console.error('保存失败', err);
+            }
+
+            // 清空表单
+            titleInput.value = '';
+            typeSelect.value = '';
+            notesTextarea.value = '';
+
+            // 提示成功并重新渲染
+            alert('上报提交成功，状态为"待审核"');
+            App.renderPage('education-reporting');
+        });
     }
 };

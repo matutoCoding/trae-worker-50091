@@ -255,3 +255,17 @@ const statusColors = {
     '易危': 'bg-amber-100 text-amber-700',
     '无危': 'bg-emerald-100 text-emerald-700'
 };
+
+// 初始化：从localStorage读取新增数据
+(function initMockData() {
+    try {
+        // 读取新增的上报记录
+        var storedReports = localStorage.getItem('bird_reserve_new_reports');
+        if (storedReports) {
+            var reports = JSON.parse(storedReports);
+            MockData.reportRecords = reports.concat(MockData.reportRecords);
+        }
+    } catch (e) {
+        console.error('加载localStorage数据失败', e);
+    }
+})();
